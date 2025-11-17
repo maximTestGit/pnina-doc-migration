@@ -6,7 +6,16 @@ The backend consists of three Google Cloud Functions Gen2 running on
 Node.js 20, each exposed via HTTP and authenticated via Google OAuth
 token passed from the frontend.
 
-## 2. Function 1 -- List Documents in Folder
+## 2. # Install nvm for Windows if you don't have it
+# Then install Node.js 20
+nvm install 20
+nvm use 20
+
+# Verify version
+node --version  # Should show v20.x.x
+
+# Reinstall dependencies
+npm install
 
 **Input:** - OAuth token - Folder ID
 

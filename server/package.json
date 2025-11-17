@@ -4,14 +4,15 @@
     "description": "Google Cloud Functions for Pnina document migration",
     "main": "functions/index.js",
     "engines": {
-        "node": "20"
+        "node": ">=20"
     },
     "scripts": {
         "start": "node functions/index.js",
         "deploy": "gcloud functions deploy"
     },
     "dependencies": {
-        "@google-cloud/functions-framework": "^3.0.0"
+        "@google-cloud/functions-framework": "^3.0.0",
+        "googleapis": "^131.0.0"
     },
     "devDependencies": {},
     "keywords": [
