@@ -1,0 +1,133 @@
+.error-documents-table {
+    padding: 1.5rem;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.table-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #721c24;
+}
+
+.alert-info {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.alert-info strong {
+    display: block;
+    color: #856404;
+    margin-bottom: 0.5rem;
+}
+
+.alert-info p {
+    margin: 0;
+    color: #856404;
+    font-size: 0.875rem;
+}
+
+.error-row {
+    background: #fff5f5;
+}
+
+.error-row:hover {
+    background: #ffe8e8;
+}
+
+.editable {
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s ease;
+}
+
+.editable:hover {
+    background: #f0f0f0;
+}
+
+.missing-field {
+    background: #fff3cd !important;
+    border-left: 4px solid #ffc107;
+    font-weight: 600;
+}
+
+.missing-field:hover {
+    background: #ffe69c !important;
+}
+
+.cell-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.edit-hint {
+    font-size: 0.875rem;
+    opacity: 0.6;
+    margin-left: 0.5rem;
+}
+
+.cell-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 2px solid #667eea;
+    border-radius: 4px;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+.missing-fields-list,
+.errors-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.field-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.field-badge.missing {
+    background: #ffc107;
+    color: #856404;
+}
+
+.error-item {
+    color: #721c24;
+    font-size: 0.875rem;
+    padding: 0.25rem;
+    background: #f8d7da;
+    border-radius: 4px;
+    border-left: 3px solid #dc3545;
+}
+
+.doc-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.doc-link:hover {
+    text-decoration: underline;
+}
+
+.table-footer {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e1e8ed;
+    color: #721c24;
+    font-size: 0.875rem;
+    font-weight: 600;
+}

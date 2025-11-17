@@ -220,6 +220,7 @@ exports.parseDocument = async (req, res) => {
             documentId: documentId,
             personName: parsedData.personName || '',
             teudatZehut: parsedData.teudatZehut || '',
+            appointmentDate: parsedData.appointmentDate || '',
             missingFields: missingFields,
             errors: errors,
             hasErrors: errors.length > 0,
@@ -307,21 +308,16 @@ exports.saveToSheets = async (req, res) => {
         const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
 
         // Prepare row data
-        const timestamp = new Date().toISOString();
-        const status = data.errors && data.errors.length > 0 ? 'Error' : 'Processed';
-        const errorMessage = data.errors && data.errors.length > 0 ? data.errors.join('; ') : '';
+        // Columns: Document ID, Document Name, Patient Name, Patient ID, Link, Status
+        const status = 'New';
 
         const rowData = [
             data.documentId || '',
             data.documentName || '',
             data.personName || '',
             data.teudatZehut || '',
-            status,
-            timestamp,
-            errorMessage,
             data.documentUrl || '',
-            data.createdTime || '',
-            data.modifiedTime || '',
+            status,
         ];
 
         // Check if document already exists in sheet
@@ -330,7 +326,7 @@ exports.saveToSheets = async (req, res) => {
         let result;
         if (existingRowIndex !== -1) {
             // Update existing row
-            const range = `${sheetTabName}!A${existingRowIndex}:J${existingRowIndex}`;
+            const range = `${sheetTabName}!A${existingRowIndex}:F${existingRowIndex}`;
             result = await sheets.spreadsheets.values.update({
                 spreadsheetId: spreadsheetId,
                 range: range,
@@ -341,7 +337,7 @@ exports.saveToSheets = async (req, res) => {
             });
         } else {
             // Append new row
-            const range = `${sheetTabName}!A:J`;
+            const range = `${sheetTabName}!A:F`;
             result = await sheets.spreadsheets.values.append({
                 spreadsheetId: spreadsheetId,
                 range: range,
@@ -358,8 +354,7 @@ exports.saveToSheets = async (req, res) => {
             success: true,
             action: existingRowIndex !== -1 ? 'updated' : 'inserted',
             rowIndex: existingRowIndex !== -1 ? existingRowIndex : result.data.updates?.updatedRange,
-            status: status,
-            timestamp: timestamp,
+            status: 'New',
         });
 
     } catch (error) {
@@ -435,12 +430,13 @@ function extractTextFromDocument(document) {
 
 /**
  * Helper function to parse document fields
- * Looks for "שם:" and "ת.ז.:" patterns
+ * Looks for "שם:", "ת.ז.:", and "תאריך ביקור:" patterns
  */
 function parseDocumentFields(text) {
     const result = {
         personName: '',
         teudatZehut: '',
+        appointmentDate: '',
     };
 
     // Pattern to find "שם:" followed by the name
@@ -458,7 +454,61 @@ function parseDocumentFields(text) {
         result.teudatZehut = teudatMatch[1].replace(/\s/g, '');
     }
 
+    // Pattern to find "תאריך ביקור:" followed by the date
+    // Supports formats: dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy
+    const appointmentPattern = /תאריך\s*ביקור\s*:\s*([0-9]{1,2}[\/.\\-][0-9]{1,2}[\/.\\-][0-9]{2,4})/;
+    const appointmentMatch = text.match(appointmentPattern);
+    if (appointmentMatch && appointmentMatch[1]) {
+        const rawDate = appointmentMatch[1].trim();
+        // Convert to dd MMM yyyy format
+        result.appointmentDate = formatDateToDdMmmYyyy(rawDate);
+    }
+
     return result;
+}
+
+/**
+ * Helper function to convert date string to dd MMM yyyy format
+ * @param {string} dateStr - Date in format dd/mm/yyyy, dd-mm-yyyy, or dd.mm.yyyy
+ * @returns {string} Date in format dd MMM yyyy (e.g., "17 Nov 2025")
+ */
+function formatDateToDdMmmYyyy(dateStr) {
+    try {
+        // Split by common separators
+        const parts = dateStr.split(/[\/.\\-]/);
+        if (parts.length !== 3) {
+            return dateStr; // Return original if can't parse
+        }
+
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // JavaScript months are 0-indexed
+        const year = parseInt(parts[2], 10);
+
+        // Handle 2-digit years
+        const fullYear = year < 100 ? (year < 50 ? 2000 + year : 1900 + year) : year;
+
+        // Create date object
+        const date = new Date(fullYear, month, day);
+
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+            return dateStr; // Return original if invalid
+        }
+
+        // Month names
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        // Format as dd MMM yyyy
+        const formattedDay = String(day).padStart(2, '0');
+        const formattedMonth = monthNames[month];
+        const formattedYear = fullYear;
+
+        return `${formattedDay} ${formattedMonth} ${formattedYear}`;
+    } catch (error) {
+        console.error('Error formatting date:', error);
+        return dateStr; // Return original on error
+    }
 }
 
 /**

@@ -1,0 +1,108 @@
+.found-documents-table {
+    padding: 1.5rem;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.table-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: #333;
+}
+
+.filter-input {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e1e8ed;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    width: 250px;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+    border: 1px solid #e1e8ed;
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead {
+    background: #f8f9fa;
+}
+
+th {
+    padding: 1rem;
+    text-align: right;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #e1e8ed;
+    white-space: nowrap;
+}
+
+th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s ease;
+}
+
+th.sortable:hover {
+    background: #e9ecef;
+}
+
+td {
+    padding: 0.875rem 1rem;
+    border-bottom: 1px solid #e1e8ed;
+    text-align: right;
+}
+
+tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.checkbox-col {
+    width: 40px;
+    text-align: center !important;
+}
+
+.id-col {
+    font-family: monospace;
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.doc-link {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.doc-link:hover {
+    text-decoration: underline;
+}
+
+.table-footer {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e1e8ed;
+    color: #666;
+    font-size: 0.875rem;
+}
+
+input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}

@@ -1,0 +1,146 @@
+.processed-documents-table {
+    padding: 1.5rem;
+}
+
+.table-header {
+    margin-bottom: 1.5rem;
+}
+
+.table-header h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    color: #333;
+}
+
+.table-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.error-filter {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #333;
+}
+
+.save-button {
+    padding: 0.5rem 1.25rem;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.save-button:hover:not(:disabled) {
+    background: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.save-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.remove-button {
+    padding: 0.5rem 1.25rem;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.remove-button:hover:not(:disabled) {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.remove-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.editable {
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s ease;
+}
+
+.editable:hover {
+    background: #f0f0f0;
+}
+
+.missing-field {
+    background: #fff3cd !important;
+    border: 2px solid #ffc107;
+}
+
+.missing-field:hover {
+    background: #ffe69c !important;
+}
+
+.cell-input {
+    width: 100%;
+    padding: 0.25rem;
+    border: 2px solid #667eea;
+    border-radius: 4px;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+.error-row {
+    background: #fff5f5;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-badge.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.missing-fields {
+    color: #856404;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.error-text {
+    color: #721c24;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.item-name-col {
+    font-weight: 600;
+    color: #495057;
+    white-space: nowrap;
+}
