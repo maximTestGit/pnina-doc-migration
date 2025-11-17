@@ -4,6 +4,7 @@
  */
 
 const { google } = require('googleapis');
+const mammoth = require('mammoth');
 
 /**
  * Function: List Folders
@@ -116,7 +117,7 @@ exports.listFolders = async (req, res) => {
 /**
  * Function 1: List Documents in Folder
  * 
- * Scans a Google Drive folder recursively and returns all Google Docs documents.
+ * Scans a Google Drive folder recursively and returns all Google Docs and .docx documents.
  * 
  * Input (POST JSON):
  *   - oauthToken: User's OAuth access token
@@ -129,6 +130,7 @@ exports.listFolders = async (req, res) => {
  *     - url: Direct URL to document
  *     - createdTime: ISO timestamp
  *     - modifiedTime: ISO timestamp
+ *     - mimeType: Document type (Google Doc or .docx)
  */
 exports.listDocuments = async (req, res) => {
     // Enable CORS
@@ -173,13 +175,15 @@ exports.listDocuments = async (req, res) => {
         const scannedFolders = new Set();
 
         while (foldersToScan.length > 0) {
-            const currentFolderId = foldersToScan.pop();
+            const currentFolderId = foldersToScan.shift(); // Use shift() for FIFO processing
 
             // Avoid infinite loops
             if (scannedFolders.has(currentFolderId)) {
                 continue;
             }
             scannedFolders.add(currentFolderId);
+
+            console.log(`Scanning folder: ${currentFolderId}`);
 
             // Query for all items in current folder
             let pageToken = null;
@@ -195,24 +199,32 @@ exports.listDocuments = async (req, res) => {
                 const files = response.data.files || [];
 
                 for (const file of files) {
-                    if (file.mimeType === 'application/vnd.google-apps.document') {
-                        // This is a Google Doc
+                    if (file.mimeType === 'application/vnd.google-apps.document' ||
+                        file.mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                        // This is a Google Doc or .docx file
+                        console.log(`Found document: ${file.name} (${file.id}) [${file.mimeType}]`);
                         documents.push({
                             id: file.id,
                             name: file.name,
                             url: file.webViewLink,
                             createdTime: file.createdTime,
                             modifiedTime: file.modifiedTime,
+                            mimeType: file.mimeType,
                         });
                     } else if (file.mimeType === 'application/vnd.google-apps.folder') {
                         // This is a subfolder - add to scan queue
-                        foldersToScan.push(file.id);
+                        console.log(`Found subfolder: ${file.name} (${file.id})`);
+                        if (!scannedFolders.has(file.id)) {
+                            foldersToScan.push(file.id);
+                        }
                     }
                 }
 
                 pageToken = response.data.nextPageToken;
             } while (pageToken);
         }
+
+        console.log(`Total documents found: ${documents.length}`);
 
         // Return results
         res.status(200).json({
@@ -254,7 +266,21 @@ exports.listDocuments = async (req, res) => {
     }
 };
 
-// Placeholder for Function 2
+/**
+ * Function 2: Parse Document
+ * 
+ * Parses a Google Doc or .docx file to extract structured data.
+ * For .docx files, converts to Google Doc format first.
+ * 
+ * Input (POST JSON):
+ *   - oauthToken: User's OAuth access token
+ *   - documentId: Document ID
+ *   - mimeType: (Optional) Document MIME type
+ * 
+ * Output:
+ *   - Parsed fields: personName, teudatZehut, appointmentDate
+ *   - Validation errors if any
+ */
 exports.parseDocument = async (req, res) => {
     // Enable CORS
     res.set('Access-Control-Allow-Origin', '*');
@@ -274,7 +300,7 @@ exports.parseDocument = async (req, res) => {
         }
 
         // Extract parameters
-        const { oauthToken, documentId } = req.body;
+        const { oauthToken, documentId, mimeType } = req.body;
 
         // Validate required parameters
         if (!oauthToken) {
@@ -289,16 +315,48 @@ exports.parseDocument = async (req, res) => {
         const oauth2Client = new google.auth.OAuth2();
         oauth2Client.setCredentials({ access_token: oauthToken });
 
-        // Initialize Docs API
-        const docs = google.docs({ version: 'v1', auth: oauth2Client });
+        // Initialize Drive API
+        const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
-        // Retrieve document content
-        const docResponse = await docs.documents.get({
-            documentId: documentId,
-        });
+        let documentText = '';
 
-        // Extract text from document
-        const documentText = extractTextFromDocument(docResponse.data);
+        // First, get file metadata to determine actual mime type if not provided
+        let actualMimeType = mimeType;
+        if (!actualMimeType) {
+            const fileMetadata = await drive.files.get({
+                fileId: documentId,
+                fields: 'mimeType'
+            });
+            actualMimeType = fileMetadata.data.mimeType;
+        }
+
+        // Handle .docx files differently from Google Docs
+        if (actualMimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            // For .docx files, download and extract text using mammoth
+            const response = await drive.files.get({
+                fileId: documentId,
+                alt: 'media'
+            }, { responseType: 'arraybuffer' });
+
+            // Use mammoth to extract text from .docx
+            const buffer = Buffer.from(response.data);
+            const result = await mammoth.extractRawText({ buffer: buffer });
+            documentText = result.value;
+        } else if (actualMimeType === 'application/vnd.google-apps.document') {
+            // For Google Docs, first export to plain text
+            const response = await drive.files.export({
+                fileId: documentId,
+                mimeType: 'text/plain',
+            }, { responseType: 'text' });
+            documentText = response.data;
+        } else {
+            // Fallback: try to get as text
+            const response = await drive.files.get({
+                fileId: documentId,
+                alt: 'media'
+            }, { responseType: 'text' });
+            documentText = response.data;
+        }
 
         // Parse the document for required fields
         const parsedData = parseDocumentFields(documentText);
@@ -554,8 +612,8 @@ function parseDocumentFields(text) {
         result.personName = nameMatch[1].trim();
     }
 
-    // Pattern to find "ת.ז.:" or "ת.ז:" followed by the ID number
-    const teudatPattern = /ת\.ז\.?:\s*([0-9\s]+)/;
+    // Pattern to find "ת.ז.:", "ת.ז:", or "ת.ז " followed by the ID number
+    const teudatPattern = /ת\.ז\.?\s*:?\s*([0-9\s]+)/;
     const teudatMatch = text.match(teudatPattern);
     if (teudatMatch && teudatMatch[1]) {
         // Remove spaces from the ID number
