@@ -1,0 +1,3 @@
+server/.env.template
+SETUP_MANUAL.md
+server/setup-gcp-project.ps1
