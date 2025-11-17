@@ -6,6 +6,114 @@
 const { google } = require('googleapis');
 
 /**
+ * Function: List Folders
+ * 
+ * Lists folders in Google Drive within a parent folder.
+ * 
+ * Input (POST JSON):
+ *   - oauthToken: User's OAuth access token
+ *   - parentFolderId: Parent folder ID ('root' for My Drive)
+ * 
+ * Output:
+ *   - folders: Array of folder objects with:
+ *     - id: Folder ID
+ *     - name: Folder name
+ */
+exports.listFolders = async (req, res) => {
+    // Enable CORS
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        res.status(204).send('');
+        return;
+    }
+
+    try {
+        // Validate request method
+        if (req.method !== 'POST') {
+            return res.status(405).json({ error: 'Method not allowed. Use POST.' });
+        }
+
+        // Extract parameters
+        const { oauthToken, parentFolderId } = req.body;
+
+        // Validate required parameters
+        if (!oauthToken) {
+            return res.status(400).json({ error: 'Missing required parameter: oauthToken' });
+        }
+
+        const folderId = parentFolderId || 'root';
+
+        // Initialize OAuth2 client with user token
+        const oauth2Client = new google.auth.OAuth2();
+        oauth2Client.setCredentials({ access_token: oauthToken });
+
+        // Initialize Drive API
+        const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+        // Query for folders in the parent folder
+        const folders = [];
+        let pageToken = null;
+
+        do {
+            const response = await drive.files.list({
+                q: `'${folderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+                fields: 'nextPageToken, files(id, name)',
+                pageSize: 100,
+                pageToken: pageToken,
+                orderBy: 'name',
+            });
+
+            const files = response.data.files || [];
+            folders.push(...files);
+
+            pageToken = response.data.nextPageToken;
+        } while (pageToken);
+
+        // Return results
+        res.status(200).json({
+            success: true,
+            count: folders.length,
+            folders: folders,
+        });
+
+    } catch (error) {
+        console.error('Error listing folders:', error);
+
+        // Handle specific error types
+        if (error.code === 401) {
+            return res.status(401).json({
+                error: 'Unauthorized. Invalid or expired OAuth token.',
+                details: error.message,
+            });
+        }
+
+        if (error.code === 404) {
+            return res.status(404).json({
+                error: 'Folder not found or not accessible.',
+                details: error.message,
+            });
+        }
+
+        if (error.code === 403) {
+            return res.status(403).json({
+                error: 'Permission denied. User does not have access to this folder.',
+                details: error.message,
+            });
+        }
+
+        // Generic error
+        res.status(500).json({
+            error: 'Internal server error while listing folders.',
+            details: error.message,
+        });
+    }
+};
+
+/**
  * Function 1: List Documents in Folder
  * 
  * Scans a Google Drive folder recursively and returns all Google Docs documents.

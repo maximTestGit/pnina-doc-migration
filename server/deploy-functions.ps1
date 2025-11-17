@@ -10,6 +10,21 @@ Write-Host "Deploying Cloud Functions to project: $PROJECT_ID" -ForegroundColor 
 Write-Host "Region: $REGION" -ForegroundColor Cyan
 Write-Host ""
 
+# Function 0: List Folders
+Write-Host "Deploying Function 0: listFolders..." -ForegroundColor Yellow
+gcloud functions deploy listFolders `
+    --gen2 `
+    --runtime=nodejs20 `
+    --region=$REGION `
+    --source=. `
+    --entry-point=listFolders `
+    --trigger-http `
+    --allow-unauthenticated `
+    --project=$PROJECT_ID
+
+Write-Host "✓ Function 0 deployed" -ForegroundColor Green
+Write-Host ""
+
 # Function 1: List Documents
 Write-Host "Deploying Function 1: listDocuments..." -ForegroundColor Yellow
 gcloud functions deploy listDocuments `
@@ -61,6 +76,7 @@ Write-Host ""
 Write-Host "Getting function URLs..." -ForegroundColor Cyan
 
 # Get URLs
+$url0 = gcloud functions describe listFolders --gen2 --region=$REGION --project=$PROJECT_ID --format="value(serviceConfig.uri)"
 $url1 = gcloud functions describe listDocuments --gen2 --region=$REGION --project=$PROJECT_ID --format="value(serviceConfig.uri)"
 $url2 = gcloud functions describe parseDocument --gen2 --region=$REGION --project=$PROJECT_ID --format="value(serviceConfig.uri)"
 $url3 = gcloud functions describe saveToSheets --gen2 --region=$REGION --project=$PROJECT_ID --format="value(serviceConfig.uri)"
@@ -68,6 +84,9 @@ $url3 = gcloud functions describe saveToSheets --gen2 --region=$REGION --project
 Write-Host ""
 Write-Host "Function URLs:" -ForegroundColor Green
 Write-Host "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" -ForegroundColor Gray
+Write-Host "Function 0 (listFolders):" -ForegroundColor Yellow
+Write-Host $url0 -ForegroundColor Cyan
+Write-Host ""
 Write-Host "Function 1 (listDocuments):" -ForegroundColor Yellow
 Write-Host $url1 -ForegroundColor Cyan
 Write-Host ""

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { listDocuments, parseDocument, saveToSheets } from '../services/api';
+import { listDocuments, parseDocument, saveToSheets, listFolders } from '../services/api';
 import Header from './Header';
 import FolderSelection from './FolderSelection';
 import FoundDocumentsTable from './FoundDocumentsTable';
@@ -177,7 +177,12 @@ const Dashboard = () => {
             <Header user={user} onLogout={logout} />
 
             <div className="dashboard-content">
-                <FolderSelection onFolderSelected={handleFolderSelected} loading={loading} />
+                <FolderSelection
+                    onFolderSelected={handleFolderSelected}
+                    loading={loading}
+                    token={token}
+                    listFoldersApi={listFolders}
+                />
 
                 {foundDocuments.length > 0 && (
                     <div className="process-section">

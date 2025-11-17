@@ -3,6 +3,31 @@ import axios from 'axios';
 const FUNCTION_LIST_DOX_URL = import.meta.env.VITE_FUNCTION_LIST_DOX_URL;
 const FUNCTION_PARSE_DOC_URL = import.meta.env.VITE_FUNCTION_PARSE_DOC_URL;
 const FUNCTION_REGISTER_DOC_URL = import.meta.env.VITE_FUNCTION_REGISTER_DOC_URL;
+const FUNCTION_LIST_FOLDERS_URL = import.meta.env.VITE_FUNCTION_LIST_FOLDERS_URL;
+
+/**
+ * List Google Drive Folders
+ */
+export const listFolders = async (token, parentFolderId = 'root') => {
+    try {
+        const response = await axios.post(
+            FUNCTION_LIST_FOLDERS_URL,
+            {
+                oauthToken: token,
+                parentFolderId
+            },
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Error listing folders:', error);
+        throw error;
+    }
+};
 
 /**
  * Function 1 - List Documents in Folder
