@@ -1,0 +1,23 @@
+{
+    "name": "pnina-doc-migration-functions",
+    "version": "1.0.0",
+    "description": "Google Cloud Functions for Pnina document migration",
+    "main": "functions/index.js",
+    "engines": {
+        "node": "20"
+    },
+    "scripts": {
+        "start": "node functions/index.js",
+        "deploy": "gcloud functions deploy"
+    },
+    "dependencies": {
+        "@google-cloud/functions-framework": "^3.0.0"
+    },
+    "devDependencies": {},
+    "keywords": [
+        "google-cloud-functions",
+        "cloud-functions"
+    ],
+    "author": "",
+    "license": "ISC"
+}
