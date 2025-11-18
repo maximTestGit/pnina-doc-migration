@@ -15,6 +15,61 @@
     color: #721c24;
 }
 
+.table-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.remove-from-errors-button {
+    padding: 0.625rem 1.25rem;
+    background: #f59e0b;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.remove-from-errors-button:hover:not(:disabled) {
+    background: #d97706;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+.remove-from-errors-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.filter-input {
+    padding: 0.5rem 1rem;
+    border: 2px solid #e1e8ed;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    width: 250px;
+}
+
+.filter-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.checkbox-col {
+    width: 40px;
+    text-align: center !important;
+}
+
+input[type="checkbox"] {
+    cursor: pointer;
+    width: 18px;
+    height: 18px;
+}
+
 .alert-info {
     background: #fff3cd;
     border: 1px solid #ffc107;

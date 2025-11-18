@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import './ErrorDocumentsTable.css';
 
-const ErrorDocumentsTable = ({ documents, onDocumentUpdate }) => {
+const ErrorDocumentsTable = ({ documents, onDocumentUpdate, onRemoveFromErrors }) => {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [filterText, setFilterText] = useState('');
     const [editingCell, setEditingCell] = useState(null);
+    const [selectedDocs, setSelectedDocs] = useState([]);
 
     const handleSort = (key) => {
         let direction = 'asc';
@@ -27,6 +28,33 @@ const ErrorDocumentsTable = ({ documents, onDocumentUpdate }) => {
 
         onDocumentUpdate(updatedDoc);
         setEditingCell(null);
+    };
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedDocs(filteredAndSorted.map(doc => doc.id));
+        } else {
+            setSelectedDocs([]);
+        }
+    };
+
+    const handleSelectOne = (docId) => {
+        if (selectedDocs.includes(docId)) {
+            setSelectedDocs(selectedDocs.filter(id => id !== docId));
+        } else {
+            setSelectedDocs([...selectedDocs, docId]);
+        }
+    };
+
+    const handleRemoveSelected = () => {
+        if (selectedDocs.length === 0) {
+            return;
+        }
+
+        if (window.confirm(`Remove ${selectedDocs.length} document(s) from error list? They will remain in processed documents with any changes you made.`)) {
+            onRemoveFromErrors(selectedDocs);
+            setSelectedDocs([]);
+        }
     };
 
     const filteredAndSorted = useMemo(() => {
@@ -70,13 +98,22 @@ const ErrorDocumentsTable = ({ documents, onDocumentUpdate }) => {
         <div className="error-documents-table">
             <div className="table-header">
                 <h3>Error Documents</h3>
-                <input
-                    type="text"
-                    placeholder="Filter..."
-                    value={filterText}
-                    onChange={(e) => setFilterText(e.target.value)}
-                    className="filter-input"
-                />
+                <div className="table-controls">
+                    <button
+                        onClick={handleRemoveSelected}
+                        disabled={selectedDocs.length === 0}
+                        className="remove-from-errors-button"
+                    >
+                        Remove Selected from Errors ({selectedDocs.length})
+                    </button>
+                    <input
+                        type="text"
+                        placeholder="Filter..."
+                        value={filterText}
+                        onChange={(e) => setFilterText(e.target.value)}
+                        className="filter-input"
+                    />
+                </div>
             </div>
 
             <div className="alert-info">
@@ -88,6 +125,13 @@ const ErrorDocumentsTable = ({ documents, onDocumentUpdate }) => {
                 <table>
                     <thead>
                         <tr>
+                            <th className="checkbox-col">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedDocs.length === filteredAndSorted.length && filteredAndSorted.length > 0}
+                                    onChange={handleSelectAll}
+                                />
+                            </th>
                             <th onClick={() => handleSort('name')} className="sortable">
                                 Name {getSortIcon('name')}
                             </th>
@@ -108,6 +152,13 @@ const ErrorDocumentsTable = ({ documents, onDocumentUpdate }) => {
                     <tbody>
                         {filteredAndSorted.map((doc) => (
                             <tr key={doc.id} className="error-row">
+                                <td className="checkbox-col">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedDocs.includes(doc.id)}
+                                        onChange={() => handleSelectOne(doc.id)}
+                                    />
+                                </td>
                                 <td>{doc.name}</td>
                                 <td
                                     className={`editable ${isMissingField(doc, 'personName') ? 'missing-field' : ''}`}
@@ -232,6 +283,7 @@ const ErrorDocumentsTable = ({ documents, onDocumentUpdate }) => {
 
             <div className="table-footer">
                 Showing {filteredAndSorted.length} error document(s)
+                {selectedDocs.length > 0 && ` • ${selectedDocs.length} selected`}
             </div>
         </div>
     );

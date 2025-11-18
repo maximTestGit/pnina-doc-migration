@@ -190,6 +190,11 @@ const Dashboard = () => {
         setErrorDocuments(prev => prev.filter(doc => !docIds.includes(doc.id)));
     };
 
+    const handleRemoveFromErrors = (docIds) => {
+        // Only remove from error documents, keep in processed with changes
+        setErrorDocuments(prev => prev.filter(doc => !docIds.includes(doc.id)));
+    };
+
     const handleSaveState = () => {
         try {
             const count = exportStateToCSV(foundDocuments, processedDocuments, errorDocuments);
@@ -349,6 +354,7 @@ const Dashboard = () => {
                         <ErrorDocumentsTable
                             documents={errorDocuments}
                             onDocumentUpdate={handleDocumentUpdate}
+                            onRemoveFromErrors={handleRemoveFromErrors}
                         />
                     )}
                 </div>
