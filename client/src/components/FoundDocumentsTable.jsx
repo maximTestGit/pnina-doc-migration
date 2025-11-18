@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import './FoundDocumentsTable.css';
 
-const FoundDocumentsTable = ({ documents, selectedDocuments, onSelectionChange }) => {
+const FoundDocumentsTable = ({ documents, selectedDocuments, onSelectionChange, processedDocumentIds = [] }) => {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [filterText, setFilterText] = useState('');
+    const [showUnprocessedOnly, setShowUnprocessedOnly] = useState(false);
 
     const handleSort = (key) => {
         let direction = 'asc';
@@ -32,9 +33,14 @@ const FoundDocumentsTable = ({ documents, selectedDocuments, onSelectionChange }
     const filteredAndSorted = useMemo(() => {
         let filtered = documents;
 
-        // Apply filter
+        // Apply unprocessed filter
+        if (showUnprocessedOnly) {
+            filtered = filtered.filter(doc => !processedDocumentIds.includes(doc.id));
+        }
+
+        // Apply text filter
         if (filterText) {
-            filtered = documents.filter(doc =>
+            filtered = filtered.filter(doc =>
                 doc.name?.toLowerCase().includes(filterText.toLowerCase()) ||
                 doc.id?.toLowerCase().includes(filterText.toLowerCase())
             );
@@ -59,7 +65,7 @@ const FoundDocumentsTable = ({ documents, selectedDocuments, onSelectionChange }
         }
 
         return filtered;
-    }, [documents, filterText, sortConfig]);
+    }, [documents, filterText, sortConfig, showUnprocessedOnly, processedDocumentIds]);
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
@@ -75,13 +81,23 @@ const FoundDocumentsTable = ({ documents, selectedDocuments, onSelectionChange }
         <div className="found-documents-table">
             <div className="table-header">
                 <h3>Found Documents</h3>
-                <input
-                    type="text"
-                    placeholder="Filter by name or ID..."
-                    value={filterText}
-                    onChange={(e) => setFilterText(e.target.value)}
-                    className="filter-input"
-                />
+                <div className="table-controls">
+                    <label className="unprocessed-filter">
+                        <input
+                            type="checkbox"
+                            checked={showUnprocessedOnly}
+                            onChange={(e) => setShowUnprocessedOnly(e.target.checked)}
+                        />
+                        <span>Show unprocessed only</span>
+                    </label>
+                    <input
+                        type="text"
+                        placeholder="Filter by name or ID..."
+                        value={filterText}
+                        onChange={(e) => setFilterText(e.target.value)}
+                        className="filter-input"
+                    />
+                </div>
             </div>
 
             <div className="table-wrapper">

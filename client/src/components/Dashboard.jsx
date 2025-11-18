@@ -17,6 +17,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(false);
     const [selectedDocuments, setSelectedDocuments] = useState([]);
     const [activeTab, setActiveTab] = useState('found'); // found, processed, errors
+    const [processingProgress, setProcessingProgress] = useState({ current: 0, total: 0 });
     const fileInputRef = useRef(null);
 
     const handleFolderSelected = async (folderId) => {
@@ -42,10 +43,23 @@ const Dashboard = () => {
         }
 
         setLoading(true);
+        setProcessingProgress({ current: 0, total: selectedDocuments.length });
+
+        // Remove documents that will be processed from processed list
+        setProcessedDocuments(prev =>
+            prev.filter(doc => !selectedDocuments.includes(doc.id))
+        );
+        setErrorDocuments(prev =>
+            prev.filter(doc => !selectedDocuments.includes(doc.id))
+        );
+
         const processed = [];
         const errors = [];
 
-        for (const docId of selectedDocuments) {
+        for (let i = 0; i < selectedDocuments.length; i++) {
+            const docId = selectedDocuments[i];
+            setProcessingProgress({ current: i + 1, total: selectedDocuments.length });
+
             try {
                 const result = await parseDocument(token, docId);
                 const doc = foundDocuments.find(d => d.id === docId);
@@ -89,6 +103,8 @@ const Dashboard = () => {
         });
 
         setActiveTab('processed');
+        setSelectedDocuments([]);
+        setProcessingProgress({ current: 0, total: 0 });
         setLoading(false);
     };
 
@@ -266,6 +282,20 @@ const Dashboard = () => {
                         >
                             {loading ? 'Processing...' : `Process Selected (${selectedDocuments.length})`}
                         </button>
+                        {loading && processingProgress.total > 0 && (
+                            <div className="progress-container">
+                                <div className="progress-bar">
+                                    <div
+                                        className="progress-fill"
+                                        style={{ width: `${(processingProgress.current / processingProgress.total) * 100}%` }}
+                                    >
+                                    </div>
+                                </div>
+                                <div className="progress-text">
+                                    Processing {processingProgress.current} of {processingProgress.total} documents
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -302,6 +332,7 @@ const Dashboard = () => {
                             documents={foundDocuments}
                             selectedDocuments={selectedDocuments}
                             onSelectionChange={setSelectedDocuments}
+                            processedDocumentIds={processedDocuments.map(d => d.id)}
                         />
                     )}
 

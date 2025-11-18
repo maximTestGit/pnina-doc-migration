@@ -376,9 +376,9 @@ exports.parseDocument = async (req, res) => {
         }
 
         // Validate Teudat Zehut format (should be 9 digits)
-        if (parsedData.teudatZehut && !/^\d{9}$/.test(parsedData.teudatZehut.replace(/\s/g, ''))) {
-            errors.push('Teudat Zehut format is invalid (should be 9 digits)');
-        }
+        // if (parsedData.teudatZehut && !/^\d{9}$/.test(parsedData.teudatZehut.replace(/\s/g, ''))) {
+        //     errors.push('Teudat Zehut format is invalid (should be 9 digits)');
+        // }
 
         // Return results
         res.status(200).json({
@@ -605,11 +605,21 @@ function parseDocumentFields(text) {
         appointmentDate: '',
     };
 
-    // Pattern to find "שם:" followed by the name
-    const namePattern = /שם:\s*([^\n\r]+)/;
-    const nameMatch = text.match(namePattern);
-    if (nameMatch && nameMatch[1]) {
-        result.personName = nameMatch[1].trim();
+    // Pattern to find "שם:" or "שם ושם" followed by the name (max 3 words, same line)
+    // Matches: "שם:" followed by 1-3 words (Hebrew or English letters)
+    let namePattern = /שם:\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
+    let nameMatch = text.match(namePattern);
+
+    // If not found, try "שם ושם" pattern (name on next line, max 3 words)
+    if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
+        namePattern = /שם\s+ושם\s*\n\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
+        nameMatch = text.match(namePattern);
+    }
+
+    // If not found, try "שם ושם משפחה" pattern (name on next line, max 3 words)
+    if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
+        namePattern = /שם\s+ושם\s+משפחה\s*\n\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
+        nameMatch = text.match(namePattern);
     }
 
     // Pattern to find "ת.ז.:", "ת.ז:", or "ת.ז " followed by the ID number
@@ -618,6 +628,19 @@ function parseDocumentFields(text) {
     if (teudatMatch && teudatMatch[1]) {
         // Remove spaces from the ID number
         result.teudatZehut = teudatMatch[1].replace(/\s/g, '');
+    }
+
+    // If name not found, try special pattern: name followed by "ת.ז" and ID on same line
+    // Example: "יאר שמש ת.ז 344383492"
+    if ((!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') && teudatMatch) {
+        const combinedPattern = /((?:[א-תa-zA-Z]+\s+){1,2}[א-תa-zA-Z]+)\s+ת\.ז\.?\s*:?\s*[0-9]/;
+        const combinedMatch = text.match(combinedPattern);
+        if (combinedMatch && combinedMatch[1]) {
+            result.personName = combinedMatch[1].trim().replace(/\s+/g, ' ');
+        }
+    } else if (nameMatch && nameMatch[1]) {
+        // Normalize multiple spaces to single space and trim
+        result.personName = nameMatch[1].trim().replace(/\s+/g, ' ');
     }
 
     // Pattern to find "תאריך ביקור:" followed by the date
