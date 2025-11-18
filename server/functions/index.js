@@ -319,15 +319,24 @@ exports.parseDocument = async (req, res) => {
         const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
         let documentText = '';
+        let documentName = '';
 
         // First, get file metadata to determine actual mime type if not provided
         let actualMimeType = mimeType;
         if (!actualMimeType) {
             const fileMetadata = await drive.files.get({
                 fileId: documentId,
-                fields: 'mimeType'
+                fields: 'mimeType, name'
             });
             actualMimeType = fileMetadata.data.mimeType;
+            documentName = fileMetadata.data.name || '';
+        } else {
+            // Get the file name separately if mimeType was provided
+            const fileMetadata = await drive.files.get({
+                fileId: documentId,
+                fields: 'name'
+            });
+            documentName = fileMetadata.data.name || '';
         }
 
         // Handle .docx files differently from Google Docs
@@ -363,7 +372,7 @@ exports.parseDocument = async (req, res) => {
         console.log(documentText);
         console.log('=== End of Document Text ===');
 
-        const parsedData = parseDocumentFields(documentText);
+        const parsedData = parseDocumentFields(documentText, documentName);
 
         // Determine missing fields and errors
         const missingFields = [];
@@ -602,11 +611,12 @@ function extractTextFromDocument(document) {
  * Helper function to parse document fields
  * Looks for "שם:", "ת.ז.:", and "תאריך ביקור:" patterns
  */
-function parseDocumentFields(text) {
+function parseDocumentFields(text, fileName = '') {
     // Remove leading whitespace from the text
     text = text.trimStart();
 
     console.log('=== Starting Document Parsing ===');
+    console.log('File name:', fileName);
     console.log('Text length:', text.length);
     console.log('First 200 characters:', text.substring(0, 200));
 
@@ -735,6 +745,20 @@ function parseDocumentFields(text) {
         console.log('Final person name (normalized):', result.personName);
     } else {
         console.log('Person Name: NOT FOUND');
+    }
+
+    // If name still not found, try to extract from file name (Hebrew characters)
+    if ((!result.personName || result.personName.trim() === '') && fileName) {
+        console.log('Attempting to extract name from file name:', fileName);
+        // Extract Hebrew characters from filename (may be multiple words)
+        const hebrewPattern = /([א-ת]+(?:\s+[א-ת]+)*)/;
+        const hebrewMatch = fileName.match(hebrewPattern);
+        if (hebrewMatch && hebrewMatch[1]) {
+            result.personName = hebrewMatch[1].trim().replace(/\s+/g, ' ');
+            console.log('Name extracted from filename:', result.personName);
+        } else {
+            console.log('No Hebrew text found in filename');
+        }
     }
 
     // Pattern to find "תאריך ביקור:" followed by the date
