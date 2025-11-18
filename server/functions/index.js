@@ -610,6 +610,12 @@ function parseDocumentFields(text) {
     let namePattern = /שם:\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
     let nameMatch = text.match(namePattern);
 
+    // If not found, try "שם מלא:" pattern (name on same line after colon, max 3 words)
+    if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
+        namePattern = /שם\s+מלא\s*:\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
+        nameMatch = text.match(namePattern);
+    }
+
     // If not found, try "שם ושם" pattern (name on next line, max 3 words)
     if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
         namePattern = /שם\s+ושם\s*\n\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
@@ -622,9 +628,40 @@ function parseDocumentFields(text) {
         nameMatch = text.match(namePattern);
     }
 
-    // Pattern to find "ת.ז.:", "ת.ז:", or "ת.ז " followed by the ID number
-    const teudatPattern = /ת\.ז\.?\s*:?\s*([0-9\s]+)/;
-    const teudatMatch = text.match(teudatPattern);
+    // If not found, try "שם ושם משפחה :" pattern (name on same line after colon, max 3 words)
+    if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
+        namePattern = /שם\s+ושם\s+משפחה\s*:\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
+        nameMatch = text.match(namePattern);
+    }
+
+    // If not found, try "שם פרטי ושם המשפחה" pattern (name on next lines, may include hyphens, max 4 words across 2 lines)
+    if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
+        namePattern = /שם\s+פרטי\s+ושם\s+המשפחה\s*\n\s*((?:[א-תa-zA-Z\-]+\s*\n?\s*){1,4})/;
+        nameMatch = text.match(namePattern);
+    }
+
+    // Pattern to find "ת.ז.:", "ת.ז:", "ת.ז ", or "תעודת זהות:" followed by the ID number
+    let teudatPattern = /ת\.ז\.?\s*:?\s*([0-9\s]+)/;
+    let teudatMatch = text.match(teudatPattern);
+
+    // If not found, try "תעודת זהות:" pattern
+    if (!teudatMatch || !teudatMatch[1]) {
+        teudatPattern = /תעודת\s+זהות\s*:\s*([0-9\s]+)/;
+        teudatMatch = text.match(teudatPattern);
+    }
+
+    // If not found, try "תז" pattern (without dots)
+    if (!teudatMatch || !teudatMatch[1]) {
+        teudatPattern = /תז\s+([0-9\s]+)/;
+        teudatMatch = text.match(teudatPattern);
+    }
+
+    // If still not found, look for first occurrence of exactly 9 consecutive digits
+    if (!teudatMatch || !teudatMatch[1]) {
+        teudatPattern = /\b(\d{9})\b/;
+        teudatMatch = text.match(teudatPattern);
+    }
+
     if (teudatMatch && teudatMatch[1]) {
         // Remove spaces from the ID number
         result.teudatZehut = teudatMatch[1].replace(/\s/g, '');
