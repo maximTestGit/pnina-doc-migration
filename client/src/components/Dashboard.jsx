@@ -14,6 +14,7 @@ const Dashboard = () => {
     const [foundDocuments, setFoundDocuments] = useState([]);
     const [processedDocuments, setProcessedDocuments] = useState([]);
     const [errorDocuments, setErrorDocuments] = useState([]);
+    const [hiddenDocuments, setHiddenDocuments] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selectedDocuments, setSelectedDocuments] = useState([]);
     const [activeTab, setActiveTab] = useState('found'); // found, processed, errors
@@ -27,6 +28,7 @@ const Dashboard = () => {
             setFoundDocuments(result.documents || []);
             setProcessedDocuments([]);
             setErrorDocuments([]);
+            setHiddenDocuments([]);
             setSelectedDocuments([]);
             setActiveTab('found');
         } catch (error) {
@@ -195,9 +197,25 @@ const Dashboard = () => {
         setErrorDocuments(prev => prev.filter(doc => !docIds.includes(doc.id)));
     };
 
+    const handleHideDocuments = (docIds) => {
+        // Move documents from found to hidden
+        const docsToHide = foundDocuments.filter(doc => docIds.includes(doc.id));
+        setHiddenDocuments(prev => [...prev, ...docsToHide]);
+        setFoundDocuments(prev => prev.filter(doc => !docIds.includes(doc.id)));
+        // Remove from selection
+        setSelectedDocuments(prev => prev.filter(id => !docIds.includes(id)));
+    };
+
+    const handleUnhideDocuments = (docIds) => {
+        // Move documents from hidden back to found
+        const docsToUnhide = hiddenDocuments.filter(doc => docIds.includes(doc.id));
+        setFoundDocuments(prev => [...prev, ...docsToUnhide]);
+        setHiddenDocuments(prev => prev.filter(doc => !docIds.includes(doc.id)));
+    };
+
     const handleSaveState = () => {
         try {
-            const count = exportStateToCSV(foundDocuments, processedDocuments, errorDocuments);
+            const count = exportStateToCSV(foundDocuments, processedDocuments, errorDocuments, hiddenDocuments);
             alert(`Successfully saved ${count} document(s) to CSV file`);
         } catch (error) {
             alert('Error saving state: ' + error.message);
@@ -219,6 +237,7 @@ const Dashboard = () => {
             setFoundDocuments(result.foundDocuments);
             setProcessedDocuments(result.processedDocuments);
             setErrorDocuments(result.errorDocuments);
+            setHiddenDocuments(result.hiddenDocuments || []);
             setSelectedDocuments([]);
 
             // Set active tab to the first non-empty category
@@ -248,7 +267,7 @@ const Dashboard = () => {
                 <div className="state-management">
                     <button
                         onClick={handleSaveState}
-                        disabled={foundDocuments.length === 0 && processedDocuments.length === 0 && errorDocuments.length === 0}
+                        disabled={foundDocuments.length === 0 && processedDocuments.length === 0 && errorDocuments.length === 0 && hiddenDocuments.length === 0}
                         className="save-state-button"
                         title="Save current state to CSV file"
                     >
@@ -329,6 +348,14 @@ const Dashboard = () => {
                             Error Documents ({errorDocuments.length})
                         </button>
                     )}
+                    {hiddenDocuments.length > 0 && (
+                        <button
+                            className={`tab ${activeTab === 'hidden' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('hidden')}
+                        >
+                            Hidden Documents ({hiddenDocuments.length})
+                        </button>
+                    )}
                 </div>
 
                 <div className="table-container">
@@ -338,6 +365,18 @@ const Dashboard = () => {
                             selectedDocuments={selectedDocuments}
                             onSelectionChange={setSelectedDocuments}
                             processedDocumentIds={processedDocuments.map(d => d.id)}
+                            onHideDocuments={handleHideDocuments}
+                        />
+                    )}
+
+                    {activeTab === 'hidden' && hiddenDocuments.length > 0 && (
+                        <FoundDocumentsTable
+                            documents={hiddenDocuments}
+                            selectedDocuments={selectedDocuments}
+                            onSelectionChange={setSelectedDocuments}
+                            processedDocumentIds={processedDocuments.map(d => d.id)}
+                            onUnhideDocuments={handleUnhideDocuments}
+                            isHiddenView={true}
                         />
                     )}
 

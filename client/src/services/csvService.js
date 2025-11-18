@@ -3,7 +3,7 @@
 /**
  * Export the current state to a CSV file
  */
-export const exportStateToCSV = (foundDocuments, processedDocuments, errorDocuments) => {
+export const exportStateToCSV = (foundDocuments, processedDocuments, errorDocuments, hiddenDocuments = []) => {
     const allDocuments = [];
 
     // Add found documents
@@ -61,6 +61,24 @@ export const exportStateToCSV = (foundDocuments, processedDocuments, errorDocume
                 errors: doc.errors?.join(';') || ''
             });
         }
+    });
+
+    // Add hidden documents
+    hiddenDocuments.forEach(doc => {
+        allDocuments.push({
+            documentType: 'hidden',
+            id: doc.id || '',
+            name: doc.name || '',
+            url: doc.url || '',
+            created: doc.created || '',
+            modified: doc.modified || '',
+            personName: '',
+            teudatZehut: '',
+            appointmentDate: '',
+            status: '',
+            missingFields: '',
+            errors: ''
+        });
     });
 
     // Convert to CSV
@@ -125,6 +143,7 @@ export const importStateFromCSV = (file) => {
                 const foundDocuments = [];
                 const processedDocuments = [];
                 const errorDocuments = [];
+                const hiddenDocuments = [];
 
                 for (let i = 1; i < lines.length; i++) {
                     const line = lines[i].trim();
@@ -168,6 +187,14 @@ export const importStateFromCSV = (file) => {
                         }
                     } else if (row.documentType === 'error') {
                         errorDocuments.push(doc);
+                    } else if (row.documentType === 'hidden') {
+                        hiddenDocuments.push({
+                            id: doc.id,
+                            name: doc.name,
+                            url: doc.url,
+                            created: doc.created,
+                            modified: doc.modified
+                        });
                     }
                 }
 
@@ -175,7 +202,8 @@ export const importStateFromCSV = (file) => {
                     foundDocuments,
                     processedDocuments,
                     errorDocuments,
-                    totalCount: foundDocuments.length + processedDocuments.length + errorDocuments.length
+                    hiddenDocuments,
+                    totalCount: foundDocuments.length + processedDocuments.length + errorDocuments.length + hiddenDocuments.length
                 });
 
             } catch (error) {

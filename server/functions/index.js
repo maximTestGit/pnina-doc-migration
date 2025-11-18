@@ -599,6 +599,9 @@ function extractTextFromDocument(document) {
  * Looks for "שם:", "ת.ז.:", and "תאריך ביקור:" patterns
  */
 function parseDocumentFields(text) {
+    // Remove leading whitespace from the text
+    text = text.trimStart();
+
     const result = {
         personName: '',
         teudatZehut: '',
@@ -659,6 +662,12 @@ function parseDocumentFields(text) {
     // If still not found, look for first occurrence of exactly 9 consecutive digits
     if (!teudatMatch || !teudatMatch[1]) {
         teudatPattern = /\b(\d{9})\b/;
+        teudatMatch = text.match(teudatPattern);
+    }
+
+    // If still not found, look for 8 or 10 digit numbers (but not starting with "972" or "05")
+    if (!teudatMatch || !teudatMatch[1]) {
+        teudatPattern = /\b(?!972|05)(\d{8}|\d{10})\b/;
         teudatMatch = text.match(teudatPattern);
     }
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import './FoundDocumentsTable.css';
 
-const FoundDocumentsTable = ({ documents, selectedDocuments, onSelectionChange, processedDocumentIds = [] }) => {
+const FoundDocumentsTable = ({ documents, selectedDocuments, onSelectionChange, processedDocumentIds = [], onHideDocuments, onUnhideDocuments, isHiddenView = false }) => {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [filterText, setFilterText] = useState('');
     const [showUnprocessedOnly, setShowUnprocessedOnly] = useState(false);
@@ -77,19 +77,58 @@ const FoundDocumentsTable = ({ documents, selectedDocuments, onSelectionChange, 
         return sortConfig.direction === 'asc' ? '↑' : '↓';
     };
 
+    const handleHideSelected = () => {
+        if (selectedDocuments.length === 0) {
+            return;
+        }
+
+        if (onHideDocuments) {
+            onHideDocuments(selectedDocuments);
+        }
+    };
+
+    const handleUnhideSelected = () => {
+        if (selectedDocuments.length === 0) {
+            return;
+        }
+
+        if (onUnhideDocuments) {
+            onUnhideDocuments(selectedDocuments);
+        }
+    };
+
     return (
         <div className="found-documents-table">
             <div className="table-header">
-                <h3>Found Documents</h3>
+                <h3>{isHiddenView ? 'Hidden Documents' : 'Found Documents'}</h3>
                 <div className="table-controls">
-                    <label className="unprocessed-filter">
-                        <input
-                            type="checkbox"
-                            checked={showUnprocessedOnly}
-                            onChange={(e) => setShowUnprocessedOnly(e.target.checked)}
-                        />
-                        <span>Show unprocessed only</span>
-                    </label>
+                    {!isHiddenView && (
+                        <label className="unprocessed-filter">
+                            <input
+                                type="checkbox"
+                                checked={showUnprocessedOnly}
+                                onChange={(e) => setShowUnprocessedOnly(e.target.checked)}
+                            />
+                            <span>Show unprocessed only</span>
+                        </label>
+                    )}
+                    {isHiddenView ? (
+                        <button
+                            onClick={handleUnhideSelected}
+                            disabled={selectedDocuments.length === 0}
+                            className="unhide-button"
+                        >
+                            Unhide Selected ({selectedDocuments.length})
+                        </button>
+                    ) : (
+                        <button
+                            onClick={handleHideSelected}
+                            disabled={selectedDocuments.length === 0}
+                            className="hide-button"
+                        >
+                            Hide Selected ({selectedDocuments.length})
+                        </button>
+                    )}
                     <input
                         type="text"
                         placeholder="Filter by name or ID..."
