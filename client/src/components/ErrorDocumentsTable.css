@@ -21,6 +21,31 @@
     gap: 1rem;
 }
 
+.hide-button {
+    padding: 0.625rem 1.25rem;
+    background: #6b7280;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.hide-button:hover:not(:disabled) {
+    background: #4b5563;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+}
+
+.hide-button:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .remove-from-errors-button {
     padding: 0.625rem 1.25rem;
     background: #f59e0b;

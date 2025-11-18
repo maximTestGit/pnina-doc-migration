@@ -206,6 +206,28 @@ const Dashboard = () => {
         setSelectedDocuments(prev => prev.filter(id => !docIds.includes(id)));
     };
 
+    const handleHideDocumentsFromAll = (docIds) => {
+        // Collect documents from all lists
+        const docsFromFound = foundDocuments.filter(doc => docIds.includes(doc.id));
+        const docsFromProcessed = processedDocuments.filter(doc => docIds.includes(doc.id));
+
+        // Use processed docs if available (they have more data), otherwise use found docs
+        const docsToHide = [...docsFromProcessed, ...docsFromFound.filter(doc =>
+            !docsFromProcessed.some(pd => pd.id === doc.id)
+        )];
+
+        // Add to hidden
+        setHiddenDocuments(prev => [...prev, ...docsToHide]);
+
+        // Remove from all lists
+        setFoundDocuments(prev => prev.filter(doc => !docIds.includes(doc.id)));
+        setProcessedDocuments(prev => prev.filter(doc => !docIds.includes(doc.id)));
+        setErrorDocuments(prev => prev.filter(doc => !docIds.includes(doc.id)));
+
+        // Remove from selection
+        setSelectedDocuments(prev => prev.filter(id => !docIds.includes(id)));
+    };
+
     const handleUnhideDocuments = (docIds) => {
         // Move documents from hidden back to found
         const docsToUnhide = hiddenDocuments.filter(doc => docIds.includes(doc.id));
@@ -394,6 +416,7 @@ const Dashboard = () => {
                             documents={errorDocuments}
                             onDocumentUpdate={handleDocumentUpdate}
                             onRemoveFromErrors={handleRemoveFromErrors}
+                            onHideDocuments={handleHideDocumentsFromAll}
                         />
                     )}
                 </div>

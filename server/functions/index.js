@@ -359,6 +359,10 @@ exports.parseDocument = async (req, res) => {
         }
 
         // Parse the document for required fields
+        console.log('=== Full Document Text ===');
+        console.log(documentText);
+        console.log('=== End of Document Text ===');
+
         const parsedData = parseDocumentFields(documentText);
 
         // Determine missing fields and errors
@@ -602,6 +606,10 @@ function parseDocumentFields(text) {
     // Remove leading whitespace from the text
     text = text.trimStart();
 
+    console.log('=== Starting Document Parsing ===');
+    console.log('Text length:', text.length);
+    console.log('First 200 characters:', text.substring(0, 200));
+
     const result = {
         personName: '',
         teudatZehut: '',
@@ -610,94 +618,142 @@ function parseDocumentFields(text) {
 
     // Pattern to find "שם:" or "שם ושם" followed by the name (max 3 words, same line)
     // Matches: "שם:" followed by 1-3 words (Hebrew or English letters)
-    let namePattern = /שם:\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
+    console.log('\n--- Attempting Name Extraction ---');
+
+    // First, try "שם ושם" pattern (name on next line, max 3 words) - prioritize this
+    let namePattern = /שם\s+ושם\s*\n\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
     let nameMatch = text.match(namePattern);
+    console.log('Pattern 1 - "שם ושם" (newline):', nameMatch ? `Found: "${nameMatch[1]}"` : 'Not found');
+
+    // If not found, try basic "שם:" pattern
+    if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
+        namePattern = /שם:\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
+        nameMatch = text.match(namePattern);
+        console.log('Pattern 2 - "שם:":', nameMatch ? `Found: "${nameMatch[1]}"` : 'Not found');
+    }
+
+    // If not found, try basic "שם:" pattern
+    if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
+        namePattern = /שם:\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
+        nameMatch = text.match(namePattern);
+        console.log('Pattern 2 - "שם:":', nameMatch ? `Found: "${nameMatch[1]}"` : 'Not found');
+    }
 
     // If not found, try "שם מלא:" pattern (name on same line after colon, max 3 words)
     if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
         namePattern = /שם\s+מלא\s*:\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
         nameMatch = text.match(namePattern);
-    }
-
-    // If not found, try "שם ושם" pattern (name on next line, max 3 words)
-    if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
-        namePattern = /שם\s+ושם\s*\n\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
-        nameMatch = text.match(namePattern);
+        console.log('Pattern 3 - "שם מלא:":', nameMatch ? `Found: "${nameMatch[1]}"` : 'Not found');
     }
 
     // If not found, try "שם ושם משפחה" pattern (name on next line, max 3 words)
     if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
         namePattern = /שם\s+ושם\s+משפחה\s*\n\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
         nameMatch = text.match(namePattern);
+        console.log('Pattern 4 - "שם ושם משפחה" (newline):', nameMatch ? `Found: "${nameMatch[1]}"` : 'Not found');
     }
 
     // If not found, try "שם ושם משפחה :" pattern (name on same line after colon, max 3 words)
     if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
         namePattern = /שם\s+ושם\s+משפחה\s*:\s*((?:[א-תa-zA-Z]+\s*){1,3})/;
         nameMatch = text.match(namePattern);
+        console.log('Pattern 5 - "שם ושם משפחה :":', nameMatch ? `Found: "${nameMatch[1]}"` : 'Not found');
     }
 
     // If not found, try "שם פרטי ושם המשפחה" pattern (name on next lines, may include hyphens, max 4 words across 2 lines)
     if (!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') {
         namePattern = /שם\s+פרטי\s+ושם\s+המשפחה\s*\n\s*((?:[א-תa-zA-Z\-]+\s*\n?\s*){1,4})/;
         nameMatch = text.match(namePattern);
+        console.log('Pattern 6 - "שם פרטי ושם המשפחה" (multi-line):', nameMatch ? `Found: "${nameMatch[1]}"` : 'Not found');
     }
 
     // Pattern to find "ת.ז.:", "ת.ז:", "ת.ז ", or "תעודת זהות:" followed by the ID number
+    console.log('\n--- Attempting Teudat Zehut Extraction ---');
     let teudatPattern = /ת\.ז\.?\s*:?\s*([0-9\s]+)/;
     let teudatMatch = text.match(teudatPattern);
+    console.log('Pattern 1 - "ת.ז.":', teudatMatch ? `Found: "${teudatMatch[1]}"` : 'Not found');
 
     // If not found, try "תעודת זהות:" pattern
     if (!teudatMatch || !teudatMatch[1]) {
         teudatPattern = /תעודת\s+זהות\s*:\s*([0-9\s]+)/;
         teudatMatch = text.match(teudatPattern);
+        console.log('Pattern 2 - "תעודת זהות:":', teudatMatch ? `Found: "${teudatMatch[1]}"` : 'Not found');
     }
 
     // If not found, try "תז" pattern (without dots)
     if (!teudatMatch || !teudatMatch[1]) {
         teudatPattern = /תז\s+([0-9\s]+)/;
         teudatMatch = text.match(teudatPattern);
+        console.log('Pattern 3 - "תז":', teudatMatch ? `Found: "${teudatMatch[1]}"` : 'Not found');
     }
 
     // If still not found, look for first occurrence of exactly 9 consecutive digits
     if (!teudatMatch || !teudatMatch[1]) {
         teudatPattern = /\b(\d{9})\b/;
         teudatMatch = text.match(teudatPattern);
+        console.log('Pattern 4 - 9 digits:', teudatMatch ? `Found: "${teudatMatch[1]}"` : 'Not found');
     }
 
     // If still not found, look for 8 or 10 digit numbers (but not starting with "972" or "05")
     if (!teudatMatch || !teudatMatch[1]) {
         teudatPattern = /\b(?!972|05)(\d{8}|\d{10})\b/;
         teudatMatch = text.match(teudatPattern);
+        console.log('Pattern 5 - 8/10 digits (not 972/05):', teudatMatch ? `Found: "${teudatMatch[1]}"` : 'Not found');
+    }
+
+    // If still not found, try "Id" pattern with alphanumeric code
+    if (!teudatMatch || !teudatMatch[1]) {
+        teudatPattern = /Id\s+([A-Z0-9]+)/i;
+        teudatMatch = text.match(teudatPattern);
+        console.log('Pattern 6 - "Id" alphanumeric:', teudatMatch ? `Found: "${teudatMatch[1]}"` : 'Not found');
     }
 
     if (teudatMatch && teudatMatch[1]) {
         // Remove spaces from the ID number
         result.teudatZehut = teudatMatch[1].replace(/\s/g, '');
+        console.log('Final Teudat Zehut (spaces removed):', result.teudatZehut);
+    } else {
+        console.log('Teudat Zehut: NOT FOUND');
     }
 
     // If name not found, try special pattern: name followed by "ת.ז" and ID on same line
     // Example: "יאר שמש ת.ז 344383492"
+    console.log('\n--- Finalizing Name Extraction ---');
     if ((!nameMatch || !nameMatch[1] || nameMatch[1].trim() === '') && teudatMatch) {
+        console.log('Attempting combined pattern (name + ת.ז + ID on same line)');
         const combinedPattern = /((?:[א-תa-zA-Z]+\s+){1,2}[א-תa-zA-Z]+)\s+ת\.ז\.?\s*:?\s*[0-9]/;
         const combinedMatch = text.match(combinedPattern);
         if (combinedMatch && combinedMatch[1]) {
             result.personName = combinedMatch[1].trim().replace(/\s+/g, ' ');
+            console.log('Combined pattern found name:', result.personName);
+        } else {
+            console.log('Combined pattern: Not found');
         }
     } else if (nameMatch && nameMatch[1]) {
         // Normalize multiple spaces to single space and trim
         result.personName = nameMatch[1].trim().replace(/\s+/g, ' ');
+        console.log('Final person name (normalized):', result.personName);
+    } else {
+        console.log('Person Name: NOT FOUND');
     }
 
     // Pattern to find "תאריך ביקור:" followed by the date
     // Supports formats: dd/mm/yyyy, dd-mm-yyyy, dd.mm.yyyy
+    console.log('\n--- Attempting Appointment Date Extraction ---');
     const appointmentPattern = /תאריך\s*ביקור\s*:\s*([0-9]{1,2}[\/.\\-][0-9]{1,2}[\/.\\-][0-9]{2,4})/;
     const appointmentMatch = text.match(appointmentPattern);
     if (appointmentMatch && appointmentMatch[1]) {
         const rawDate = appointmentMatch[1].trim();
+        console.log('Raw date found:', rawDate);
         // Convert to dd MMM yyyy format
         result.appointmentDate = formatDateToDdMmmYyyy(rawDate);
+        console.log('Formatted date:', result.appointmentDate);
+    } else {
+        console.log('Appointment Date: NOT FOUND');
     }
+
+    console.log('\n=== Parsing Complete ===');
+    console.log('Result:', JSON.stringify(result, null, 2));
 
     return result;
 }

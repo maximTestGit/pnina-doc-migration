@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import './ErrorDocumentsTable.css';
 
-const ErrorDocumentsTable = ({ documents, onDocumentUpdate, onRemoveFromErrors }) => {
+const ErrorDocumentsTable = ({ documents, onDocumentUpdate, onRemoveFromErrors, onHideDocuments }) => {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
     const [filterText, setFilterText] = useState('');
     const [editingCell, setEditingCell] = useState(null);
@@ -57,6 +57,17 @@ const ErrorDocumentsTable = ({ documents, onDocumentUpdate, onRemoveFromErrors }
         }
     };
 
+    const handleHideSelected = () => {
+        if (selectedDocs.length === 0) {
+            return;
+        }
+
+        if (window.confirm(`Hide ${selectedDocs.length} document(s)? They will be removed from all lists and moved to hidden documents.`)) {
+            onHideDocuments(selectedDocs);
+            setSelectedDocs([]);
+        }
+    };
+
     const filteredAndSorted = useMemo(() => {
         let filtered = documents;
 
@@ -99,6 +110,13 @@ const ErrorDocumentsTable = ({ documents, onDocumentUpdate, onRemoveFromErrors }
             <div className="table-header">
                 <h3>Error Documents</h3>
                 <div className="table-controls">
+                    <button
+                        onClick={handleHideSelected}
+                        disabled={selectedDocs.length === 0}
+                        className="hide-button"
+                    >
+                        Hide Selected ({selectedDocs.length})
+                    </button>
                     <button
                         onClick={handleRemoveSelected}
                         disabled={selectedDocs.length === 0}
