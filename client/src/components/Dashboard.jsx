@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { listDocuments, parseDocument, saveToSheets, listFolders } from '../services/api';
+import { exportStateToCSV, importStateFromCSV } from '../services/csvService';
 import Header from './Header';
 import FolderSelection from './FolderSelection';
 import FoundDocumentsTable from './FoundDocumentsTable';
@@ -16,6 +17,7 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(false);
     const [selectedDocuments, setSelectedDocuments] = useState([]);
     const [activeTab, setActiveTab] = useState('found'); // found, processed, errors
+    const fileInputRef = useRef(null);
 
     const handleFolderSelected = async (folderId) => {
         setLoading(true);
@@ -172,11 +174,82 @@ const Dashboard = () => {
         setErrorDocuments(prev => prev.filter(doc => !docIds.includes(doc.id)));
     };
 
+    const handleSaveState = () => {
+        try {
+            const count = exportStateToCSV(foundDocuments, processedDocuments, errorDocuments);
+            alert(`Successfully saved ${count} document(s) to CSV file`);
+        } catch (error) {
+            alert('Error saving state: ' + error.message);
+        }
+    };
+
+    const handleLoadState = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileSelected = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setLoading(true);
+            const result = await importStateFromCSV(file);
+
+            setFoundDocuments(result.foundDocuments);
+            setProcessedDocuments(result.processedDocuments);
+            setErrorDocuments(result.errorDocuments);
+            setSelectedDocuments([]);
+
+            // Set active tab to the first non-empty category
+            if (result.foundDocuments.length > 0) {
+                setActiveTab('found');
+            } else if (result.processedDocuments.length > 0) {
+                setActiveTab('processed');
+            } else if (result.errorDocuments.length > 0) {
+                setActiveTab('errors');
+            }
+
+            alert(`Successfully loaded ${result.totalCount} document(s) from CSV file`);
+        } catch (error) {
+            alert('Error loading state: ' + error.message);
+        } finally {
+            setLoading(false);
+            // Reset file input
+            e.target.value = '';
+        }
+    };
+
     return (
         <div className="dashboard">
             <Header user={user} onLogout={logout} />
 
             <div className="dashboard-content">
+                <div className="state-management">
+                    <button
+                        onClick={handleSaveState}
+                        disabled={foundDocuments.length === 0 && processedDocuments.length === 0 && errorDocuments.length === 0}
+                        className="save-state-button"
+                        title="Save current state to CSV file"
+                    >
+                        💾 Save State
+                    </button>
+                    <button
+                        onClick={handleLoadState}
+                        disabled={loading}
+                        className="load-state-button"
+                        title="Load state from CSV file"
+                    >
+                        📂 Load State
+                    </button>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv"
+                        onChange={handleFileSelected}
+                        style={{ display: 'none' }}
+                    />
+                </div>
+
                 <FolderSelection
                     onFolderSelected={handleFolderSelected}
                     loading={loading}
